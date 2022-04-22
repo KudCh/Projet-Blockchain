@@ -5,14 +5,14 @@
 #include <time.h>
 # include <assert.h>
 #include <string.h>
-#include <openssl/sha.h>
+//#include <openssl/sha.h>
 
 
 
 
 int is_prime_naive(long p){
     int i=3;
-    
+
     while(i<sqrt(p-1)){
         if(p%i!= 0){
             i+=2;
@@ -42,7 +42,7 @@ long modpow(long a ,long m,long n){
     if (m==0) {
         return 1;
     }
-    
+
     if (m%2==0){
         long res=modpow(a,m/2,n);
         return (res*res)%n;
@@ -114,7 +114,7 @@ long random_prime_number(int low_size,int up_size,int k){
 
 
     long p=rand_long(low ,up );
-    
+
     if( is_prime_miller(p, k)==1){
        // printf("p=%ld\n",p);
         return p;
@@ -134,10 +134,10 @@ long extended_gcd(long s, long t, long *u, long *v){
         return t;
     }
     long uPrim, vPrim;
-    
+
     long gcd = extended_gcd(t%s, s, &uPrim, &vPrim);
-    
-   
+
+
     *u = vPrim - ((t/s)*uPrim);
     *v = uPrim;
 
@@ -150,12 +150,12 @@ void generate_keys_values(long p, long q, long* n, long *s, long *u){
     *n = p*q;
     long t = (p-1)*(q-1);
     long v=1;
-   
+
     while (extended_gcd(*s, t, u, &v) != 1 ) {
         *s = rand_long(0,t-1); //random number between 1 and t
         }
    ;
-    
+
 }
 
 
@@ -174,9 +174,9 @@ long* encrypt(char* chaine, long s, long n){
 }
 
 char* decrypt(long* crypted, int size, long u, long n){
- 
+
     char * decrpt = (char*)malloc(sizeof(char)*(size+1));
-    
+
     for (int i = 0; i<size; i++){
         //printf("%ld ",modpow(crypted[i], u,n));
         decrpt[i]=(char)modpow(crypted[i], u,n);
@@ -247,12 +247,12 @@ typedef struct signature{
 }Signature;
 
 Signature* init_signature(long* content ,int size){
-  
+
     Signature *tab=(Signature*)malloc(sizeof(Signature));
 
      tab->content=content;
-    
-    
+
+
     tab->size=size;
     return tab;
 
@@ -310,15 +310,15 @@ Signature * str_to_signature ( char * str ) {
  }
 
 typedef struct protected{
-  Key *pKey; 
+  Key *pKey;
   char *mess;
   Signature *sgn;
 }Protected;
 
 Protected *init_protected(Key *pKey,char *mess,Signature *sgn_is){
-     
+
     Protected *pro=(Protected *)malloc(sizeof(Protected));
-    
+
    pro->pKey = pKey;
     pro->mess=strdup(mess);
     pro->sgn=sgn_is;
@@ -333,7 +333,7 @@ int verify(Protected *pr){
         long u = pr->pKey->value;
         long n = pr->pKey->n;
         char * decrpt = decrypt(crypted, size, u, n);
-    
+
         char * messg = pr->mess;
 
         if(strcmp(decrpt, messg)==0){
@@ -353,7 +353,7 @@ char* protected_to_str(Protected *pr){
     char * key = key_to_str(pr->pKey);
     char * mess = pr->mess;
     char * sgn = signature_to_str(pr->sgn);
-  
+
 
     sprintf(str,"%s""\t%s""\t%s", key,mess, sgn);
 
@@ -361,7 +361,7 @@ char* protected_to_str(Protected *pr){
 }
 
 Protected *str_to_protected(char *str){
-     
+
     char mess[60];
     char key[60];
   char sgn[60];
@@ -373,56 +373,80 @@ return init_protected(str_to_key(key),mess,str_to_signature(sgn));
 
 
 void generate_random_data(int nv,int nc){
-    
-    FILE *f1=fopen("keys.txt","w");
-    FILE *f2=fopen("candidates.txt","w");
-    FILE *f3=fopen("declarations.txt","w");
-    if(f1==NULL || f2==NULL || f3 ==NULL){
+
+    FILE *keys=fopen("keys.txt","w");
+    FILE *candidates=fopen("candidates.txt","w");
+    FILE *declarations=fopen("declarations.txt","w");
+    //FILE *f1=fopen("declar.txt","w");
+
+    if(keys==NULL || candidates==NULL || declarations==NULL){
         printf("erreur lors de l'allocation");
         return ;
     }
 
     Key *pKey=(Key*)malloc(sizeof(Key));
     Key *sKey=(Key*)malloc(sizeof(Key));
-    
+    //Key *pKeyC=(Key*)malloc(sizeof(Key));
+    //Key *sKeyC=(Key*)malloc(sizeof(Key));
+
 
     if(pKey==NULL || sKey==NULL) {
         printf("Erreur lors de l'allocation");
         return ;
     }
-    
-    Key
 
     for(int i=0;i<nv;i++){
         init_pair_keys(pKey,sKey, 3,7);
-    fprintf(f1,"%s %s\n",key_to_str(pKey),key_to_str(sKey));
+        fprintf(keys,"%s %s\n",key_to_str(pKey),key_to_str(sKey));
     }
+    for(int j=0;j<nc;j++){
+        init_pair_keys(pKey,sKey,3,7);
+        fprintf(declarations,"%s\n",key_to_str(pKey));
+    }
+
 
     Signature *sgn;
     Protected *pr;
-   // Key *pKeyC=(Key*)malloc(sizeof(Key));
-   // Key *sKeyC=(Key*)malloc(sizeof(Key));
+    char bufferV[50];
+    char bufferC[25];
+    char pKeyChar[25];
+    char sKeyChar[25];
+    char mess[25];
 
-   // if(pKeyC==NULL || sKeyC==NULL) {
-   //     printf("Erreur lors de l'allocation");
-   //     return ;
-   // }
-   
-   
-    for(int i=0;i<nc;i++)
-        init_pair_keys(pKeyC,sKeyC,3,7);
+    rewind(keys);
+    rewind(candidates);
 
-    fprintf(f2,"%s\n",key_to_str (pKeyC));
-    sgn=sign(key_to_str ( pKeyC ),sKey);
-    pr=init_protected(pKey,key_to_str ( pKeyC ),sgn);
-    fprintf(f3,"%s\n",protected_to_str(pr));
+    while(fgets(bufferV, 50, keys)){  // the buffer is empty :(
+        sscanf(bufferV,"%s""\t%s",pKeyChar,sKeyChar);
+        pKey = str_to_key(pKeyChar);
+        sKey = str_to_key(sKeyChar);
 
-    
-    fclose(f1);
-    fclose(f2);
-    fclose(f3);
+        rewind(candidates);
+        int r = rand() % nc;
 
+        for(int k; k<=r; k++){
+            fgets(bufferC, 50, candidates);
+            printf("%s\n", bufferC);
+        }
+        sscanf(bufferC,"%s", mess);
 
+        sgn = sign(mess, sKey);
+        pr = init_protected(pKey, mess, sgn);
+
+        fprintf(declarations,"%s\n",protected_to_str(pr));
+
+    }
+
+    free(pKey);
+    free(sKey);
+   // free(pr->pKey);
+   // free(pr->sgn);
+    free(pr);
+    free(sgn);
+
+    fclose(keys);
+    fclose(candidates);
+    fclose(declarations);
 }
 
 typedef struct cellKey{
@@ -440,7 +464,7 @@ CellKey* create_cell_key(Key* key){
 }
 
 void cell_en_tete(CellKey** cell ,Key *data){
-    
+
      CellKey *c=create_cell_key(data);
      c->next=*cell;
 
@@ -457,8 +481,8 @@ void print_list_keys(CellKey *LCK){
         return ;
     }
     printf("debut affichage d'une liste de cle\n");
-   
-    
+
+
     while(LCK){
        if(LCK->data!= NULL)
             printf(" %s\n",key_to_str(LCK->data));
@@ -480,23 +504,23 @@ CellKey* read_public_keys(char *nomF){
 
     CellKey *listC=(CellKey*)malloc(sizeof(CellKey));
     char buffer[250];
-    
+
     while(fgets(buffer,250,f)){
-        
+
         Key * keyTmp=str_to_key(buffer);
         if(keyTmp!=NULL)
             cell_en_tete(&listC,keyTmp);
-       
+
     }
     fclose(f);
     return listC;
 }
 void delete_cell_key(CellKey* c){
     if (c) {
-        free(c->data);  
+        free(c->data);
         c=c->next;
     }
-    
+
 }
 
 
@@ -541,7 +565,7 @@ CellProtected *read_protected(char *nomF){
 
     while(fgets(buffer,250,f)){
 
-        
+
         Protected *keyTmp=str_to_protected(buffer);
         cell_protected_en_tete(&listP,keyTmp);
     }
@@ -571,7 +595,7 @@ void delete_cell_protected(CellProtected *CP){
    free(CP->data->pKey);
     free(CP->data->sgn->content);
     free(CP->data->sgn);
-    
+
 }
 
 
@@ -580,7 +604,7 @@ void delete_list_protected(CellProtected *LCP){
         printf("pas liste de signature declaree");
         return;
     }
-    
+
     while(LCP){
         CellProtected *tmp=LCP;
         delete_cell_protected(tmp);
@@ -588,7 +612,7 @@ void delete_list_protected(CellProtected *LCP){
     }
     free(LCP);
 }
- 
+
 //////////exo 6
 
 
@@ -598,8 +622,8 @@ void delete_fausse_signature(CellProtected *LCP){
         delete_cell_protected(tmpr);
         LCP=LCP->next;
     }
-    
-    CellProtected *tmp=LCP; 
+
+    CellProtected *tmp=LCP;
     while(tmp->next){
         if(verify(tmp->next->data)==0){
              CellProtected *tmp2=tmp->next;
@@ -609,7 +633,7 @@ void delete_fausse_signature(CellProtected *LCP){
 
         }
         tmp=tmp->next;
-    
+
     }
 }
 
@@ -638,9 +662,9 @@ int hash_function(Key *key,int size){
     double A=(sqrt(5)-1)/2;
 
     long a =key->value+key->n;
-    
+
     double tmp=(a*A-(int)(a*A));
-    
+
     return (int)(size*tmp);
 
 
@@ -649,35 +673,35 @@ int hash_function(Key *key,int size){
 int find_position(HashTable *t,Key* key){
 
     for(int i=0;i<t->size;i++){
-      
+
     }
     return 1;
-    
 
-   
-        
+
+
+
 }
 
 HashTable *create_hashtable(CellKey* keys,int size){
-   
+
     HashTable *new=(HashTable*)malloc(sizeof(HashTable));
     new->size=size;
-   
-   
+
+
     while(keys){
         new->tab[find_position(new,keys->data)]->key=keys->data;
-        
+
         keys=keys->next;
 
     }
-   
-    
+
+
     return new;
 
 
 }
 void delete_hastable(HashTable* t){
-    
+
     if(!t){
         printf("pas de table de hachage\n\n");
     }
@@ -693,27 +717,27 @@ void delete_hastable(HashTable* t){
 }
 
 Key* compute_winner(CellProtected* decl, CellKey* candidates,CellKey* voters, int sizeC, int sizeV) {
-  
+
   HashTable *HC=create_hashtable(candidates,sizeC);
   HashTable *HV=create_hashtable(voters,sizeV);
-  
-  
+
+
   while(decl){
-      
+
      if( HV->tab[find_position(HV,decl->data->pKey)]->val==0) {
          if(strcmp(key_to_str(HC->tab[find_position(HC,decl->data->pKey)]->key),decl->data->mess)==0){
              if (strcmp(key_to_str(HC->tab[find_position(HC,decl->data->pKey)]->key),key_to_str(HV->tab[find_position(HV,decl->data->pKey)]->key))==0){
-                
+
                  HV->tab[find_position(HV,decl->data->pKey)]->val=1;
                  HC->tab[find_position(HC,decl->data->pKey)]->val=1;
              }
-           
+
          }
-        
+
      }
      decl=decl->next;
 
-      
+
 
   }
   return HC->tab[find_position(HC,decl->data->pKey)]->key;
@@ -734,25 +758,22 @@ Key* compute_winner(CellProtected* decl, CellKey* candidates,CellKey* voters, in
 
 
 int main(){
+    printf("start\n");
     generate_random_data(60,50);
-    Key * pKey = malloc ( sizeof ( Key ) ) ;
-    Key * sKey = malloc ( sizeof ( Key ) ) ;
-     init_pair_keys ( pKey , sKey ,3 ,7) ;
+  /*  Key * pKey = malloc(sizeof( Key ));
+    Key * sKey = malloc(sizeof( Key ));
+    init_pair_keys(pKey,sKey,3,7);
+    Key * pKeyC = malloc(sizeof(Key));
+    Key * sKeyC = malloc(sizeof(Key));
+    init_pair_keys(pKeyC,sKeyC,3,7);
 
-Key * pKeyC = malloc ( sizeof ( Key ) ) ;
-       
-        
-        Key * sKeyC = malloc ( sizeof ( Key ) ) ;
-        init_pair_keys ( pKeyC , sKeyC ,3 ,7) ;
-     
-        //Declaration:
-        char * mess = key_to_str ( pKeyC ) ;
-            
-     Signature * sgn = sign ( mess , sKey ) ;
-    
-     char * chaine =signature_to_str ( sgn ) ;
-     Protected * pr = init_protected( pKey, mess, sgn) ;
-     chaine = protected_to_str ( pr ) ;
+    //Declaration:
+    char * mess = key_to_str ( pKeyC ) ;
+    Signature * sgn = sign ( mess , sKey ) ;
+
+    char * chaine =signature_to_str ( sgn ) ;
+    Protected * pr = init_protected( pKey, mess, sgn) ;
+    chaine = protected_to_str ( pr ) ;
         printf (" Protected to str : %s \n", chaine ) ;
         pr = str_to_protected ( chaine ) ;
         printf (" Str to protected : %s %s %s \n", key_to_str ( pr -> pKey ) ,pr -> mess ,signature_to_str ( pr-> sgn ) ) ;
@@ -777,22 +798,14 @@ Key * pKeyC = malloc ( sizeof ( Key ) ) ;
 
          CellProtected *cp=create_cell_protected(pr);
          cell_protected_en_tete(&cp,init_protected( pKeyC, mess, sgn));
-         
+         print_list_protected(cp);
+
          delete_list_protected(cp);
          printf("affichage de cp\n");
         // print_list_protected(cp);
          CellProtected *cell_prot=read_protected("declarations.txt");
          print_list_protected(cell_prot);
-    
-
-
-
-
-    
-
-
-
-
+    */
 
     return 0;
 }
