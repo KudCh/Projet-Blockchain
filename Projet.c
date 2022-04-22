@@ -1729,6 +1729,26 @@ void delete_tree(CellTree* tree){
     return;
 }
 
+CellTree* highest_child(CellTree* cell){
+
+    if (cell->firstChild == NULL) return cell;
+    //CellTree * first = cell->firstChild;
+    CellTree * next = cell->nextBro;
+    CellTree * maxChild = first;
+    while (next){
+        if(maxChild<next){
+            maxChiild = next;
+        }
+        next = next->nextBro;
+    }
+    highest_child(maxChild);
+}
+
+CellTree* last_node(CellTree* tree){
+    CellTree * node = highest_child(tree);
+    return node; // la meme chose que heighest_child... ???
+}
+
 int main(){
 
     return 0;
