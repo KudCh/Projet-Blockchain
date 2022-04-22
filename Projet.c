@@ -1732,7 +1732,6 @@ void delete_tree(CellTree* tree){
 CellTree* highest_child(CellTree* cell){
 
     if (cell->firstChild == NULL) return cell;
-    //CellTree * first = cell->firstChild;
     CellTree * next = cell->nextBro;
     CellTree * maxChild = first;
     while (next){
@@ -1747,6 +1746,21 @@ CellTree* highest_child(CellTree* cell){
 CellTree* last_node(CellTree* tree){
     CellTree * node = highest_child(tree);
     return node; // la meme chose que heighest_child... ???
+}
+
+CellProtected* fusion(CellProtected* first, CellProtected* second){
+
+    // la complexite et theta du # des elements dans la premiere liste, 
+    // pour avoir la complexite O(1), il faut utiliser une liste doublement chainee
+    
+    CellProtected  *element = first;
+    if (element == NULL)
+        return second;
+
+    while(element->next)
+      element = element->next;
+    element->next = second;
+    return first;
 }
 
 int main(){
