@@ -1562,14 +1562,99 @@ Key* compute_winner(CellProtected* decl, CellKey* candidates,CellKey* voters, in
 }
 
 
+typedef struct block {
+Key * author ;
+CellProtected * votes ;
+unsigned char * hash ;
+unsigned char * previous_hash ;
+int nonce ;
+ } Block ;
+
+
+void write_block(char *nomF,Block *block){
+
+    FILE *f =fopen(nomF,"w");
+    if (f==NULL){
+        printf("Error");
+        exit(1);
+    }
+
+    CellProtected *tmp=block->votes;
+
+    fprintf(f,"%s,%hhn,%hhn,%d",key_to_str(block->author),block->hash,block->previous_hash,block->nonce);
+    while(tmp){
+        fprintf(f,"%s",protected_to_str(tmp->data));
+        tmp=tmp->next;
+    }
+    fclose(f);
+}
+
+
+void read_to_block(char *nomF,Block *block){
+
+    FILE *f=fopen(nomF,"r");
+    if(f ==NULL){
+        printf("Erreur");
+        exit(1);
+    }
+
+
+}
+
+char* block_to_str(Block* block){
+
+    char* str=(char*)malloc(sizeof(char)*10);
+    char * key = key_to_str(block->author);
+    char voters[250];
+    Block *tmp=block;
+    while(tmp->votes){
+       sprintf(voters,"%s\n",protected_to_str(tmp->votes->data));
+       tmp->votes=tmp->votes->next;
+    }
+
+    sprintf(str," %s\t%hhn\t%s\t%d\n ", key,block->previous_hash,voters,block->nonce);
+
+    return str;
+
+
+}
+
+
+unsigned char *SHA(const char *s){
+    unsigned char *d=SHA256((unsigned char *)s,strlen(s),0);
+
+    for(int i=0;i<SHA256_DIGEST_LENGTH ; i ++)
+        printf("%02x",d[i]);
+    putchar('\n');
+    return d;
+
+}
+void compute_proof_of_work(Block *B,int d){
+    for(int i=0;i<4*d;i++) {
+        B->hash[i]=0;
+        B->nonce++;
+    }
+}
 
 
 
+int verify_block(Block *B,int d){
+    if(B->nonce==4*d){
+        return 1;
+    }
+    else{
+        return 0;
+    }
+}
+void delete_bllock(Block *b){  /// pas tester
 
+    while(b->votes){
+        CellProtected *tmp=b->votes;
+        b->votes=b->votes->next;
+        free(tmp);
+    }
 
-
-
-
+}
 
 
 
