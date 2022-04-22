@@ -592,7 +592,7 @@ void print_list_protected(CellProtected *LCP){
 
 
 void delete_cell_protected(CellProtected *CP){
-   free(CP->data->pKey);
+    free(CP->data->pKey);
     free(CP->data->sgn->content);
     free(CP->data->sgn);
 
@@ -1562,66 +1562,175 @@ Key* compute_winner(CellProtected* decl, CellKey* candidates,CellKey* voters, in
 }
 
 
+typedef struct block {
+Key * author ;
+CellProtected * votes ;
+unsigned char * hash ;
+unsigned char * previous_hash ;
+int nonce ;
+ } Block ;
+
+
+void write_block(char *nomF,Block *block){
+
+    FILE *f =fopen(nomF,"w");
+    if (f==NULL){
+        printf("Error");
+        exit(1);
+    }
+
+    CellProtected *tmp=block->votes;
+
+    fprintf(f,"%s,%hhn,%hhn,%d",key_to_str(block->author),block->hash,block->previous_hash,block->nonce);
+    while(tmp){
+        fprintf(f,"%s",protected_to_str(tmp->data));
+        tmp=tmp->next;
+    }
+    fclose(f);
+}
+
+
+void read_to_block(char *nomF,Block *block){
+
+    FILE *f=fopen(nomF,"r");
+    if(f ==NULL){
+        printf("Erreur");
+        exit(1);
+    }
+
+
+}
+
+char* block_to_str(Block* block){
+
+    char* str=(char*)malloc(sizeof(char)*10);
+    char * key = key_to_str(block->author);
+    char voters[250];
+    Block *tmp=block;
+    while(tmp->votes){
+       sprintf(voters,"%s\n",protected_to_str(tmp->votes->data));
+       tmp->votes=tmp->votes->next;
+    }
+
+    sprintf(str," %s\t%hhn\t%s\t%d\n ", key,block->previous_hash,voters,block->nonce);
+
+    return str;
+
+
+}
+
+
+unsigned char *SHA(const char *s){
+    unsigned char *d=SHA256((unsigned char *)s,strlen(s),0);
+
+    for(int i=0;i<SHA256_DIGEST_LENGTH ; i ++)
+        printf("%02x",d[i]);
+    putchar('\n');
+    return d;
+
+}
+void compute_proof_of_work(Block *B,int d){
+    for(int i=0;i<4*d;i++) {
+        B->hash[i]=0;
+        B->nonce++;
+    }
+}
 
 
 
+int verify_block(Block *B,int d){
+    if(B->nonce==4*d){
+        return 1;
+    }
+    else{
+        return 0;
+    }
+}
+void delete_block(Block *b){  /// pas tester
+
+    while(b->votes){
+        CellProtected *tmp=b->votes;
+        b->votes=b->votes->next;
+        free(tmp);
+    }
+
+}
 
 
+///////////// Ex. 8 //////////
+typedef struct block_tree_cell {
+    Block * block ;
+    struct block_tree_cell * father ;
+    struct block_tree_cell * firstChild ;
+    struct block_tree_cell * nextBro ;
+    int height ;
+} CellTree ;
 
+CellTree* create_node(Block* b){
+    CellTree* noeud = malloc(sizeof(CellTree));
+    noeud->block = b;
+    noeud->father = NULL;
+    noeud->firstChild = NULL;
+    noeud->nextBro = NULL;
+    noeud->height = 0;
 
+    return noeud;
+}
 
+int update_height(CellTree* father, CellTree* child){
 
+    int newHeight = child->height+1;
+    if (newHeight>father->height){
 
+        father->height= newHeight;
+        return 1;
+    }
+    return 0;
+}
+
+void add child(CellTree* father, CellTree* child){
+
+    child->nextBro = father->firstChild;
+    father->firstChild = child;
+
+    while(father){
+        update_height(father, child);
+        child = father;
+        father = father->father;
+    }
+    return;
+}
+
+void print_tree(CellTree *tree){
+
+    if(tree!=NULL){
+        printf("Height: %d, hash_value: %hhn\n", tree->height, tree->block->hash);
+        print_tree(tree->firstChild);
+        print_tree(tree->nextBro);
+    }
+    return;
+}
+
+void delete_node(CellTree* node){
+    if (node){
+        delete_block(node->block);
+        free(node);
+    }
+    return;
+}
+
+void delete_tree(CellTree* tree){
+
+    CellProtected * bro = tree->nextBro;
+    CellProtected * child = tree->firstChild;
+    delete_node(t);
+    delete_tree(bro);
+    delete_tree(child);
+
+    return;
+}
 
 int main(){
-    printf("start\n");
-    generate_random_data(60,50);
-  /*  Key * pKey = malloc(sizeof( Key ));
-    Key * sKey = malloc(sizeof( Key ));
-    init_pair_keys(pKey,sKey,3,7);
-    Key * pKeyC = malloc(sizeof(Key));
-    Key * sKeyC = malloc(sizeof(Key));
-    init_pair_keys(pKeyC,sKeyC,3,7);
-
-    //Declaration:
-    char * mess = key_to_str ( pKeyC ) ;
-    Signature * sgn = sign ( mess , sKey ) ;
-
-    char * chaine =signature_to_str ( sgn ) ;
-    Protected * pr = init_protected( pKey, mess, sgn) ;
-    chaine = protected_to_str ( pr ) ;
-        printf (" Protected to str : %s \n", chaine ) ;
-        pr = str_to_protected ( chaine ) ;
-        printf (" Str to protected : %s %s %s \n", key_to_str ( pr -> pKey ) ,pr -> mess ,signature_to_str ( pr-> sgn ) ) ;
-        chaine = protected_to_str ( pr ) ;
-         printf (" Protected to str : %s \n", chaine ) ;
-    //test exo5
-        CellKey *ck=create_cell_key(pKey);
-        printf("affichage ck\n");
-        cell_en_tete(&ck,sKey);
-        cell_en_tete(&ck,pKeyC);
-        cell_en_tete(&ck,sKeyC);
-
-        print_list_keys(ck);
-        //printf("affichage cell_key\n");
-        // CellKey *cell_key=read_public_keys("keys.txt");
-        // print_list_keys(cell_key);
-        printf("delete cell_key\n");
-         delete_cell_key(ck);
-         print_list_keys(ck);
-         delete_list_keys(&ck);
-        // print_list_keys(ck);
-
-         CellProtected *cp=create_cell_protected(pr);
-         cell_protected_en_tete(&cp,init_protected( pKeyC, mess, sgn));
-         print_list_protected(cp);
-
-         delete_list_protected(cp);
-         printf("affichage de cp\n");
-        // print_list_protected(cp);
-         CellProtected *cell_prot=read_protected("declarations.txt");
-         print_list_protected(cell_prot);
-    */
 
     return 0;
 }
