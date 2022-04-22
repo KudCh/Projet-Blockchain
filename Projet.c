@@ -717,30 +717,36 @@ void delete_hastable(HashTable* t){
 }
 
 Key* compute_winner(CellProtected* decl, CellKey* candidates,CellKey* voters, int sizeC, int sizeV) {
-
+  
   HashTable *HC=create_hashtable(candidates,sizeC);
   HashTable *HV=create_hashtable(voters,sizeV);
-
-
+  
+  
   while(decl){
-
+      
      if( HV->tab[find_position(HV,decl->data->pKey)]->val==0) {
          if(strcmp(key_to_str(HC->tab[find_position(HC,decl->data->pKey)]->key),decl->data->mess)==0){
              if (strcmp(key_to_str(HC->tab[find_position(HC,decl->data->pKey)]->key),key_to_str(HV->tab[find_position(HV,decl->data->pKey)]->key))==0){
-
+                
                  HV->tab[find_position(HV,decl->data->pKey)]->val=1;
-                 HC->tab[find_position(HC,decl->data->pKey)]->val=1;
+                 HC->tab[find_position(HC,decl->data->pKey)]->val++;
              }
-
+           
          }
-
+        
      }
      decl=decl->next;
 
-
+      
 
   }
-  return HC->tab[find_position(HC,decl->data->pKey)]->key;
+  int win= HC->tab[0]->val;
+  for(int i =0;i<HC->size;i++){
+      if(win<HC->tab[i]->val){
+          win=HC->tab[i]->val;
+      }
+  }
+  return HC->tab[win]->key;
 
 
 }
