@@ -1637,7 +1637,6 @@ void compute_proof_of_work(Block *B,int d){
 }
 
 
-
 int verify_block(Block *B,int d){
     if(B->nonce==4*d){
         return 1;
